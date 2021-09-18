@@ -30,11 +30,6 @@ public class RemarkCommand extends Command {
     private final Index index;
     private final Remark remark;
 
-    public RemarkCommand() {
-        this.index = null;
-        this.remark = null;
-    }
-
     /**
      * @param index of the person in the filtered person list to edit the remark
      * @param remark of the person to be updated to
