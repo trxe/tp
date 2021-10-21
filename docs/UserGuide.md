@@ -4,7 +4,7 @@ title: User Guide
 ---
 
 * Table of Contents
-  {:toc}
+ {:toc}
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -85,7 +85,6 @@ TODO: Define named parameters, positional parameters
 
 </div>
 
-------------------
 
 ### Viewing help : `help`
 
@@ -94,8 +93,6 @@ Shows a message explaning how to access the help page.
 ![help message](images/helpMessage.png)
 
 Format: `help`
-
-------------------
 
 ### Adding a property/buyer: `add`
 
@@ -113,15 +110,11 @@ Examples:
 A property/buyer can have any number of tags (including 0). All tags will be converted to lowercase.
 </div>
 
-------------------
-
 ### Listing all properties/buyers : `list`
 
 Shows a list of all properties and buyers in PropertyWhiz.
 
 Format: `list`
-
-------------------
 
 ### Editing a property/buyer : `edit`
 
@@ -151,15 +144,11 @@ The following example is invalid:
 
 </div>
 
-------------------
-
 ### [IN PROGRESS] Viewing price histogram of listed properties and/or buyers : `stat`
 
 Views the price histogram of the currently listed properties and/or buyers in the view.
 
 Format: `stat [(property | buyer)]`
-
-------------------
 
 ### [IN PROGRESS] Locating properties by name: `find`
 **TODO:** Find command adapted for property/buyers
@@ -182,8 +171,6 @@ Examples:
 * `find Jurong t/4rm t/near school` returns `jurong [4rm] [near school] [near mrt]` and `Jurong East [4rm] [near school] [near mrt]` but not `jurong [4rm] [near mrt]`
 * `find t/4rm t/near school` returns `jurong [4rm] [near school] [near mrt]` and `Clementi [4rm] [near school] [near mrt]`
 
-------------------
-
 ### Deleting a property/buyer : `delete`
 
 Deletes the specified property/buyer from PropertyWhiz.
@@ -197,8 +184,6 @@ Format: `delete (property | buyer) INDEX`
 Examples:
 * `list` followed by `delete property 2` deletes the 2nd property in PropertyWhiz.
 * `find East Coast` followed by `delete property 1` deletes the 1st property in the results of the `find` command.
-
-------------------
 
 ### Sorting properties/buyers: `sort`
 
@@ -214,8 +199,6 @@ Examples:
 * `sort properties price asc` returns the property list sorted by price in ascending order
 * `sort buyers name desc` returns the buyer list sorted by name in descending order
 
-------------------
-
 ### Importing data from csv file : `import`
 
 Imports buyers or properties from csv file.
@@ -225,8 +208,6 @@ Format: `import buyers` or `import properties`
 * You can select the import file location from a pop-up dialog box.
 
 TODO: Add example of valid csv
-
-------------------
 
 ### Exporting data to csv file : `export`
 
@@ -249,23 +230,17 @@ Example result of `export buyer`
 "Alibaba","61234567","alibaba@baba.com","1999999","condo,landed"
 ```
 
-------------------
-
 ### Clearing all entries : `clear`
 
 Clears all entries from PropertyWhiz.
 
 Format: `clear`
 
-------------------
-
 ### Exiting the program : `exit`
 
 Exits the program.
 
 Format: `exit`
-
-------------------
 
 ### Saving the data
 
