@@ -28,13 +28,14 @@ PropertyWhiz (PropertyWhiz) is a **desktop app for managing properties and prope
    ![Ui](images/Ui.png)
    TODO: We may also want `clear` to delete all buyers
    
-1. [**DEVELOPMENT IN PROGRESS**] Type the command in the command box and press Enter to execute it. e.g. typing **`help`** and pressing Enter will open the help window.<br>
+1. [**IN PROGRESS**] Type the command in the command box and press Enter to execute it. e.g. typing **`help`** and pressing Enter will open the help window.<br>
    Some example commands you can try:
 
     * **`list`** : Lists all properties/buyers. e.g. `list`
 
     * **`add`** Adds a property/buyer.
-        * e.g. `add property n/Blk 123 a/123, Clementi Rd, #04-20, 1234665 s/James Lee p/61234567 e/example@email.com $/100000 t/HDB t/3rm`
+        * e.g. `add property n/Blk 123 a/123, Clementi Rd, #04-20, 1234665 s/James Lee p/61234567 e/example@email.com $/100000 t/HDB t/3rm` 
+        * e.g. `add buyer n/Sam p/91234567 e/sam@email.com $/740000 t/hdb t/3rm`
 
     * **`delete`** : Deletes a property/buyer shown in the current list at the given index.
         * e.g. `delete property 3`
