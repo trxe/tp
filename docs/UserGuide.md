@@ -200,7 +200,7 @@ Examples:
 
 ------------------
 
-### Sorting properties/buyers: `sort`
+### Sorting properties/buyers : `sort`
 
 Sorts the properties / buyers in PropertyWhiz.
 
