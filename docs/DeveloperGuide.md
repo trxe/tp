@@ -10,6 +10,8 @@ title: Developer Guide
 ## **Acknowledgements**
 
 * {list here sources of all reused/adapted ideas, code, documentation, and third-party libraries -- include links to the original source as well}
+* [JFreeChart](https://www.jfree.org/jfreechart/) for providing the API to display statistics and charts.
+* [JavaFX](https://gluonhq.com/products/javafx/) for providing the API to render GUI.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -152,95 +154,178 @@ Classes used by multiple components are in the `seedu.addressbook.commons` packa
 
 --------------------------------------------------------------------------------------------------------------------
 
-TODO: Should this be removed?
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
 
-### \[Proposed\] Undo/redo feature
+### Automated matching of properties and buyers
 
-#### Proposed Implementation
+The automatic matching feature performs a one-to-one matching of buyers to properties based on price and tags in common. This section describes the algorithm and explains its rationale.
 
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
+This matching is done by the `MatchAutoCommand` class, and is triggered when the user enters the `match auto` command. The algorithm takes in the currently visible list of properties and buyers, and outputs a list of buyer-property matches. Note that each buyer is matched to at most one property and vice versa.
 
-* `VersionedAddressBook#commit()` — Saves the current address book state in its history.
-* `VersionedAddressBook#undo()` — Restores the previous address book state from its history.
-* `VersionedAddressBook#redo()` — Restores a previously undone address book state from its history.
+The goal of the algorithm is to allow the user to discover compatible buyers and properties. Compatibility is determined by a _Match Score_, which is calculated based on the number of tags the buyer and property have in common, as well as the buyer's budget and property price.
 
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
+The activity diagram below illustrates the algorithm:
 
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
+![MatchAutoActivityDiagram](images/MatchAutoActivityDiagram.png)
 
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial address book state, and the `currentStatePointer` pointing to that single address book state.
+1. The algorithm generates all possible pairs between the list of buyers and properties.
+2. The algorithm sorts all these candidate matches by the match score.
+3. Starting with the match with the highest score, the algorithm accepts each match whose buyer and property have not been previously matched. This continues until all candidate matches are evaluated.
+4. The list of accepted matches is then returned to the UI to be displayed.
 
-![UndoRedoState0](images/UndoRedoState0.png)
-
-Step 2. The user executes `delete 5` command to delete the 5th property in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
-
-![UndoRedoState1](images/UndoRedoState1.png)
-
-Step 3. The user executes `add n/David …​` to add a new property. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
-
-![UndoRedoState2](images/UndoRedoState2.png)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the address book state will not be saved into the `addressBookStateList`.
-
-</div>
-
-Step 4. The user now decides that adding the property was a mistake, and decides to undo that action by executing the `undo` command. The `undo` command will call `Model#undoAddressBook()`, which will shift the `currentStatePointer` once to the left, pointing it to the previous address book state, and restores the address book to that state.
-
-![UndoRedoState3](images/UndoRedoState3.png)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** If the `currentStatePointer` is at index 0, pointing to the initial AddressBook state, then there are no previous AddressBook states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-
-</div>
-
-The following sequence diagram shows how the undo operation works:
-
-![UndoSequenceDiagram](images/UndoSequenceDiagram.png)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `UndoCommand` should end at the destroy marker (X) but due to a limitation of PlantUML, the lifeline reaches the end of diagram.
-
-</div>
-
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** If the `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest address book state, then there are no undone AddressBook states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is the case. If so, it will return an error to the user rather than attempting to perform the redo.
-
-</div>
-
-Step 5. The user then decides to execute the command `list`. Commands that do not modify the address book, such as `list`, will usually not call `Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, the `addressBookStateList` remains unchanged.
-
-![UndoRedoState4](images/UndoRedoState4.png)
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David …​` command. This is the behavior that most modern desktop applications follow.
-
-![UndoRedoState5](images/UndoRedoState5.png)
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<img src="images/CommitActivityDiagram.png" width="250" />
+Please refer to the `MatchAutoCommand` and `Match` classes for the full details of the implementation, including the calculation of the _Match Score_.
 
 #### Design considerations:
 
-**Aspect: How undo & redo executes:**
+**Aspect: Matching Output**
 
-* **Alternative 1 (current choice):** Saves the entire address book.
+* **Alternative 1 (current choice):** One-to-one matching between properties and buyers.
+    * Currently, each buyer is matched to at most one property and vice versa.
+    * Pros: Easier for users to comprehend.
+    * Cons: Displays less information to users.
+
+* **Alternative 2:** Many-to-many matching
+    * Alternatively, each buyer and property can be simultaneously matched to many others.
+    * Pros: Potentially convey more information to the user.
+    * Cons: Harder for users to comprehend and navigate the information.
+
+We decided to go with Alternative 1 as we prioritised presenting a simpler and more intuitive output to our users.
+
+**Aspect: Matching algorithm**
+
+* **Alternative 1 (current choice):** Prioritise top matches
+    * The current algorithm selects matches starting with the best possible match. This optimises for the compatibility of the first few matches.
+    * Pros: First few matches are likely to be very compatible.
+    * Cons: Last few matches are likely to be poor.
+
+* **Alternative 2:** Prioritise overall fairness of matches
+    * An alternative algorithm might optimise for the number of acceptable matches.
+    * Pros: Allows more buyers to be matched with acceptable properties.
+    * Cons: First few matches may not be as compatible as Alternative 1.
+
+We chose Alternative 1 as we expect the user to focus on the top matches, hence we optimised for those.
+
+### Sort feature
+The sort feature allows the user to sort the properties and buyers in PropertyWhiz.
+The feature consists of the following commands:
+* `sort properties` - Sorts the properties in PropertyWhiz.
+* `sort buyers` - Sorts the buyers in PropertyWhiz.
+
+There are 2 sorting options in PropertyWhiz:
+* `SortType` - Enum class that represents the attributes of buyers and properties that can be sorted. Currently, only names and prices of buyers and properties can be sorted. These are represented by `SortType.NAME` and `SortType.PRICE` respectively.
+* `SortDirection` - Enum class that represents the direction, ascending or descending, of the sort. These are represented by `SortDirection.ASC` and `SortDirection.DESC`.
+
+#### Parsing of commands within the `Logic` component
+The parsing of commands is done in the `LogicManager` and when executed, which results in `SortCommand` object being created. 
+Since both properties and buyers can be sorted, `SortCommand` is abstract and `SortPropertyCommand` and `SortBuyerCommand`are concrete subclasses that extend `SortComand`.
+The `SortCommandParser` serves as the intermediate layer between `LogicManager` and `SortCommand` to handle parsing of arguments of the user sort command. 
+
+Given below are the steps to parse a sort user command:
+
+Step 1. `AddressBookParser` will check if the command is a sort command. The `AddressBookParser` will then create a `SortCommandParser`.
+
+Step 2. `SortCommandParser` will parse the arguments of the command to get the list, sort type and sort direction to be sorted by calling static methods in `ParserUtil`.
+
+Step 3. Depending on the list to be sorted, the corresponding subclass of `SortCommand` will be created:
+   * `sort properties <args>`: `SortPropertyCommand`
+   * `sort buyers <args>`: `SortBuyerCommand`
+
+   The user input for types of `<args>` can be found in the [UserGuide](UserGuide.md#sorting-propertiesbuyers-sort).
+
+Given below is a sequence diagram for interactions inside the `Logic` component for the `execute("sort properties price asc")` API call.
+
+![SortParsingSequenceDiagram](images/SortParsingSequenceDiagram.png)
+
+<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `SortCommandParser` should end at the destroy marker (X) but due to a limitation of PlantUML, the lifeline reaches the end of diagram.
+</div>
+
+#### Execution of commands within the `Logic` component
+After parsing of the user input into a `SortCommand`, the `LogicManager` calls `SortCommand#execute(model)` with a `model`.
+
+The `Model` interface exposes the following operations to sort the buyers and properties list:
+* `Model#sortProperties(sortType, sortDirection)`
+* `Model#sortBuyers(sortType, sortDirection)`
+
+`ModelManager` implements the the `Model` interface. `SortPropertyCommand` will call `ModelManager#sortProperties(sortType, sortDirection)` and `SortBuyerCommand` will call `ModelManager#sortBuyers(SortType, SortDirection)`.
+
+`ModelManager` will call methods of the encapsulated `AddressBook`: `AddressBook#sortProperties(sortType, sortDirection)` or  `AddressBook#sortBuyers(sortType, sortDirection)`.
+
+`AddressBook` will call the `sort(sortType, sortDirection)` method of either `UniquePropertyList` or `UniqueBuyerList` to sort the properties or buyers.
+
+Lastly, a `CommandResult` object containing the message to be displayed to the user is created and returned to the `LogicManager`.
+
+Given below is a sequence diagram for the execution of a `SortPropertyCommand`.
+![SortExecutionSequenceDiagram](images/SortExecutionSequenceDiagram.png)
+
+<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `SortPropertyCommand` should end at the destroy marker (X) but due to a limitation of PlantUML, the lifeline reaches the end of diagram.
+</div>
+
+#### Design considerations:
+**Aspect: Implementation of `SortCommand#execute(model)`** 
+* **Alternative 1 (current choice)**: Pass the `SortType` and `SortDirection` from the `SortCommand` to the `Model`.
   * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
+  * Cons: Need to pass the arguments through many layers before reaching `UniquePropertyList`.
+* **Alternative 2** : Implement many methods in the `Model` to represent the different combinations of sort types and directions and call these method directly in `SortCommand#execute(model)`.
+  * Pros: Better abstraction.
+  * Cons: Too many different combinations, and as a result, too many methods in the `model`, if there is a need to extend the sort options in the future.
 
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the property being deleted).
-  * Cons: We must ensure that the implementation of each individual command are correct.
+### Statistics Diagram Pop-ups
 
-_{more aspects and alternatives to be added}_
+#### Implementation
 
-### \[Proposed\] Data archiving
+The mechanism for handling and presenting statistics is facilitated by the classes implementing `Stat`.
 
-_{Explain here how the data archiving feature will be implemented}_
+[JFreeChart](https://www.jfree.org/jfreechart/) is the third-party library used to generate charts in the
+program. If more charts are to be implemented in the future, JFreeChart supports a wide range of graphing
+and chart drawing capabilities, as can be seen from its 
+[API](https://www.jfree.org/jfreechart/javadoc/index.html) here.
 
+Currently the only type of diagram supported is a price histogram of the visible properties and/or buyers,
+facilitated by `HistogramStat` in the subpackage `seedu.address.ui.stats`.
+
+The `CommandResult` class now includes an attribute that contains an `Optional<UiElement>` that contains
+an element that a `UiPart` can handle the rendering of.
+
+![StatUiClassDiagram](images/StatUiClassDiagram.png)
+
+Given below is an example usage scenario and how the statistics diagram is generated and then presented.
+
+Step 1. The user executes `stat property` to display the statistics of the properties on screen. The `stat` command is parsed by `AddressBookParser#parseCommand`, which creates
+a `StatCommandParser` which parses the argument `property` passed to it.
+
+Step 2. `StatCommandParser` identifies if the user want to show the prices for buyers, properties or both, and creates a `StatCommand` which creates
+a `Stat` object that is passed via a `CommandResult` to the MainWindow.
+
+<div markdown="span" class="alert alert-info">:information_source: **Note:** The `Stat` interface implements the `Stat#create` method that creates a `JFreeChart`. 
+
+</div>
+
+Step 3. Upon receiving the `Stat` object, the `MainWindow` creates the `JFreeChart` to be presented by calling `Stat#create`, before passing the chart to `StatWindow`.
+
+Step 4. `StatWindow` updates the statistics window with the latest `JFreeChart` it has received.
+
+#### Future extensions:
+
+Currently the `stat` command only displays a price histogram with a fixed number of 10 bins (columns).
+Here are several extensions that can be implemented in the future:
+
+1. Allow the user to enter how many bins they want to see in the histogram.
+
+1. Allow the user to choose between different types of charts.
+
+#### Design considerations:
+
+**Aspect: How to create the `JFreeChart` histogram's dataset before `ChartFactory` creates the chart:**
+
+* **Alternative 1:** Use the `HistogramDataset` class to automatically generate the dataset.
+    * Pros: Easy to implement.
+    * Cons: JFreeChart's default dataset generated by `HistogramDataset` has many visual bugs with small datasets.
+
+* **Alternative 2 (current choice):** Create a fixed number of `SimpleHistogramBins`, rendered by a `BarRenderer`.
+    * Pros: Less visual bugs, finer control of graph visuals.
+    * Cons: More verbose code, may have a greater performance hit when dealing with larger datasets.
 
 --------------------------------------------------------------------------------------------------------------------
 
