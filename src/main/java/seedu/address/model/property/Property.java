@@ -80,7 +80,7 @@ public class Property implements Listable, Taggable, Nameable, Pricable {
         }
 
         return otherProperty != null
-                && otherProperty.getName().equals(getName());
+                && otherProperty.getAddress().equals(getAddress());
     }
 
     /**
@@ -119,7 +119,7 @@ public class Property implements Listable, Taggable, Nameable, Pricable {
                 .append(getAddress())
                 .append("; Seller: ")
                 .append(getSeller())
-                .append("; Price: ")
+                .append("; Price: $")
                 .append(getPrice());
 
         Set<Tag> tags = getTags();
